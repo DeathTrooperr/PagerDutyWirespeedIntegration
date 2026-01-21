@@ -1,0 +1,15 @@
+name = "wirespeed-pagerduty-integration"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+workers_dev = false
+
+[vars]
+# PAGERDUTY_ROUTING_KEY = "your-routing-key"
+# WIRESPEED_API_TOKEN = "your-api-token"
+
+[observability]
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+persist = true

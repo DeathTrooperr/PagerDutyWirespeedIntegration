@@ -1,0 +1,32 @@
+{
+  "name": "pagerdutywirespeedintegration",
+  "version": "1.0.0",
+  "description": "Wirespeed integration with PagerDuty",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DeathTrooperr/PagerDutyWirespeedIntegration.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/DeathTrooperr/PagerDutyWirespeedIntegration/issues"
+  },
+  "homepage": "https://github.com/DeathTrooperr/PagerDutyWirespeedIntegration#readme",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260120.0",
+    "@types/sanitize-html": "^2.16.0",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.59.3"
+  },
+  "dependencies": {
+    "postal-mime": "^2.7.3",
+    "sanitize-html": "^2.17.0"
+  }
+}
