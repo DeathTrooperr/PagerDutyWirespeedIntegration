@@ -115,8 +115,8 @@ export default {
 				// PagerDuty lists custom details alphabetically so order here doesn't matter'
 				custom_details: {
 					priority: caseData.severity,
-					case_id: caseData.id,
-					case_sid: caseData.sid,
+					caseID: caseData.id,
+					caseSID: caseData.sid,
 					containsVIP: caseData.containsVIP,
 					containsHVA: caseData.containsHVA,
 					containsMobile: caseData.containsMobile,
@@ -124,7 +124,7 @@ export default {
 					summary: sanitizedSummary,
 					verdict: caseData.verdict,
 					notes: caseData.notes,
-					team_id: caseData.teamId,
+					teamID: caseData.teamId,
 					contained: caseData.contained,
 					test_mode: caseData.testMode,
 				},

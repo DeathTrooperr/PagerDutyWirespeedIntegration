@@ -1,14 +1,11 @@
 # Wirespeed PagerDuty Integration
 
-This is a Cloudflare Email Worker based email integratation with Wirespeed security allow security teams to quickly be alerted to security eslelations in the 
-platform. It receives email notifications from Wirespeed via Cloudflare Email Routing, extracts the case ID, fetches case details from the Wirespeed API, 
-and triggers a critical alert in PagerDuty. Advanced users can also configure the severity of the alert in PagerDuty to match the severity of the case in Wirespeed.
+This is a Cloudflare Email Worker-based integration that connects Wirespeed security alerts to PagerDuty. It allows security teams to be quickly alerted to security escalations within the platform. The integration receives email notifications from Wirespeed via Cloudflare Email Routing, extracts the case ID, fetches case details from the Wirespeed API, and triggers a critical alert in PagerDuty. Advanced users can also configure PagerDuty to match the alert severity with the Wirespeed case severity.
 
 ## Prerequisites
-
 Before you begin, you will need:
-- A **Cloudflare hosted** domain with **Email Routing** enabled.
-- A **PagerDuty Events Integration key** from either a service or an AI Ops router.
+- A **Cloudflare-hosted** domain with **Email Routing** enabled.
+- A **PagerDuty Events Integration key** from either a Service or an Event Orchestration.
 - A **Wirespeed API key** with **read-only** permissions.
 
 ## Deployment Steps
@@ -36,22 +33,23 @@ Before you begin, you will need:
 
 5. **Create a new Email Route:**
    - Go to your domain's **Email Routing** settings in the Cloudflare dashboard.
-   - Create a new address (e.g., `wirespeed@yourdomain.com`) and set the destination to **Send to Worker** and select `wirespeed-pagerduty-integration`.
+   - Create a new address (e.g., `wirespeed@yourdomain.com`).
+   - Set the destination to **Send to Worker** and select `wirespeed-pagerduty-integration`.
 
 6. **Configure Wirespeed Team Mailbox:**
-   - Launch your **Wirespeed console** and go to **Team Settings** (this can be done at the MSP or client tenant levels based on the API key scope).
+   - Launch your **Wirespeed console** and navigate to **Team Settings** (this can be done at the MSP or client tenant levels based on the API key scope).
    - Scroll down to the **Team Mailbox** section.
-   - Add a new mailbox setting the address to the one you set up in Cloudflare earlier (e.g., `wirespeed@yourdomain.com`).
+   - Add a new mailbox, setting the address to the one you created in Cloudflare (e.g., `wirespeed@yourdomain.com`).
    - Finally, set the **Notification Escalation Severity** to the lowest level (**Informational**).
 
-**That's it!** Now you will be getting escalations in PagerDuty from Wirespeed as quickly as possible!
+**That's it!** You will now receive escalations in PagerDuty from Wirespeed as quickly as possible.
 
 ## Advanced Deployment (PagerDuty AIOps)
 
-For more granular control over alert severity and incident priority, you can use PagerDuty AIOps Orchestrations to route and modify events based on Wirespeed case data.
+For more granular control over alert severity and incident priority, you can use PagerDuty Event Orchestrations to route and modify events based on Wirespeed case data.
 
 1. **Create an Orchestration:**
-   - In PagerDuty, navigate to **AIOps** > **Event Orchestrations**.
+   - In PagerDuty, navigate to **Automation** > **Event Orchestration**.
    - Create a new Orchestration.
 
 2. **Configure Service Routes:**
@@ -61,8 +59,8 @@ For more granular control over alert severity and incident priority, you can use
 
 3. **Create Event Rules for Severity Mapping:**
    The integration sends the Wirespeed case severity in the `event.custom_details.priority` field. You can create rules to map these to PagerDuty levels.
-   - Within the service orchestration, create new event rules using `if / else if` statements.
-   - Create five rules, one for each severity level (e.g., Critical, High, Medium, Low, Informational).
+   - Within the Service Orchestration, create new event rules using `if / else if` statements.
+   - Create five rules, one for each severity level (Critical, High, Medium, Low, Informational).
    - For each rule, check the event priority:
      - **Condition:** `event.custom_details.priority` matches the Wirespeed level.
      - **Actions:** Set **Incident Priority** and **Severity** to the desired levels for your organization.
@@ -70,4 +68,4 @@ For more granular control over alert severity and incident priority, you can use
 4. **Test the Integration:**
    - Once complete, test the routing and rules using a **ChatOps Test event** or by triggering a test case in Wirespeed.
 
-With this setup, Wirespeed alerts will automatically be categorized and prioritized in PagerDuty based on their actual severity.
+With this setup, Wirespeed alerts will be automatically categorized and prioritized in PagerDuty based on their actual severity.
