@@ -9,12 +9,47 @@ export interface Env {
 interface WirespeedCase {
 	id: string;
 	sid: string;
-	name: string;
+	teamId: string;
+	lastNotifiedClientAt: any;
 	status: string;
-	severity: string;
-	summary: string;
+	createdAt: string;
+	detectionSids: string[];
+	testMode: boolean;
+	firstDetectionSourceIngestedAt: string;
+	firstDetectionSourceDetectedAt: string;
+	logs: {
+		log: string;
+		timestamp: string;
+		debug: boolean;
+	}[];
+	contained: boolean;
+	reingested: boolean;
+	verdict: string;
 	title: string;
-	[key: string]: any;
+	categories: string[];
+	excludeFromMeans: boolean;
+	firstRun: boolean;
+	containsVIP: boolean;
+	containsHVA: boolean;
+	containsMobile: boolean;
+	severity: string;
+	severityOrdinal: number;
+	name: string;
+	updatedAt: string;
+	closedAt: string;
+	verdictedAt: string;
+	detectionCount: number;
+	mttr: number;
+	teamName: string;
+	externalTicketId: string;
+	externalTicketIntegrationId: string;
+	autoContained: boolean;
+	respondedAt: string;
+	platforms: string[];
+	notes: string;
+	clientNotified: boolean;
+	summary: string;
+	hasPassedAql: boolean;
 }
 
 // @ts-ignore
