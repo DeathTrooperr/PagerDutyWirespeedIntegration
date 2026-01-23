@@ -98,10 +98,12 @@ export default {
 		}
 
 		const caseData = (await wirespeedResponse.json()) as WirespeedCase;
-		const sanitizedSummary = sanitizeHtml(caseData.summary || '', {
+		const sanitizerConfig = {
 			allowedTags: [],
 			allowedAttributes: {},
-		});
+		}
+		const sanitizedSummary = sanitizeHtml(caseData.summary || '', sanitizerConfig);
+		const sanitizedNotes = sanitizeHtml(caseData.notes || 'None', sanitizerConfig);
 
 		const pdAlert = {
 			payload: {
@@ -123,7 +125,7 @@ export default {
 					status: caseData.status,
 					summary: sanitizedSummary,
 					verdict: caseData.verdict,
-					notes: caseData.notes,
+					notes: sanitizedNotes,
 					teamID: caseData.teamId,
 					contained: caseData.contained,
 					test_mode: caseData.testMode,
