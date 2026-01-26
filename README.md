@@ -2,18 +2,26 @@
 
 This is a Cloudflare Email Worker-based integration that connects Wirespeed security alerts to PagerDuty. It allows security teams to be quickly alerted to security escalations within the platform. The integration receives email notifications from Wirespeed via Cloudflare Email Routing, extracts the case ID, fetches case details from the Wirespeed API, and triggers a critical alert in PagerDuty. Advanced users can also configure PagerDuty to match the alert severity with the Wirespeed case severity.
 
+## Key Features
+
+- **Failsafe System**: In the event that the Wirespeed API is unavailable or the case details cannot be fetched, the integration will trigger a "Failsafe" alert in PagerDuty using the information extracted directly from the notification email. This ensures you never miss a critical escalation.
+- **Standalone & Service Provider Support**: The integration is designed to work in both single-team and multi-tenant (MSP) environments. It automatically detects if a case belongs to a different sub-team and adjusts its API scope dynamically to fetch the correct details.
+- **Simple Deployment**: Built on Cloudflare Workers, the integration can be deployed in minutes. With minimal configuration and no complex infrastructure to manage, you can have your security alerts flowing from Wirespeed to PagerDuty almost instantly.
+- **Versatility**: Whether you're using basic PagerDuty services or advanced Event Orchestrations, this integration provides the rich metadata needed to drive intelligent routing and severity mapping. It adapts to your existing workflow, not the other way around.
+
 ## Prerequisites
 Before you begin, you will need:
 - A **Cloudflare-hosted** domain with **Email Routing** enabled.
 - A **PagerDuty Events Integration key** from either a Service or an Event Orchestration.
-- A **Wirespeed API key** with **read-only** permissions.
+- A **Wirespeed Team API key** with **read-only** permissions.
 
 ## Deployment Steps
 
-1. **Clone the project locally:**
+1. **Clone the project locally and install dependencies:**
    ```bash
    git clone https://github.com/DeathTrooperr/PagerDutyWirespeedIntegration
    cd PagerDutyWirespeedIntegration
+   npm install
    ```
 
 2. **Configure Secrets:**

@@ -1,58 +1,9 @@
 import PostalMime from 'postal-mime';
-import sanitizeHtml from 'sanitize-html';
+import type { Env, WirespeedCase } from './lib/types.js';
+import { extractCaseId, sanitize } from './lib/utils.js';
+import { fetchCurrentTeam, searchCases, switchTeam, fetchCaseDetails, sendToPagerDuty } from './lib/wirespeed.js';
+import { createPagerDutyAlert } from './lib/pagerduty.js';
 
-export interface Env {
-	WIRESPEED_API_TOKEN: string;
-	PAGERDUTY_ROUTING_KEY: string;
-}
-
-interface WirespeedCase {
-	id: string;
-	sid: string;
-	teamId: string;
-	lastNotifiedClientAt: any;
-	status: string;
-	createdAt: string;
-	detectionSids: string[];
-	testMode: boolean;
-	firstDetectionSourceIngestedAt: string;
-	firstDetectionSourceDetectedAt: string;
-	logs: {
-		log: string;
-		timestamp: string;
-		debug: boolean;
-	}[];
-	contained: boolean;
-	reingested: boolean;
-	verdict: string;
-	title: string;
-	categories: string[];
-	excludeFromMeans: boolean;
-	firstRun: boolean;
-	containsVIP: boolean;
-	containsHVA: boolean;
-	containsMobile: boolean;
-	severity: string;
-	severityOrdinal: number;
-	name: string;
-	updatedAt: string;
-	closedAt: string;
-	verdictedAt: string;
-	detectionCount: number;
-	mttr: number;
-	teamName: string;
-	externalTicketId: string;
-	externalTicketIntegrationId: string;
-	autoContained: boolean;
-	respondedAt: string;
-	platforms: string[];
-	notes: string;
-	clientNotified: boolean;
-	summary: string;
-	hasPassedAql: boolean;
-}
-
-// @ts-ignore
 export default {
 	async email(message: ForwardableEmailMessage, env: Env, ctx: ExecutionContext): Promise<void> {
 		const emailRegex = /.*@.+\.wirespeed\.co$/;
@@ -68,94 +19,57 @@ export default {
 		const textBody = parsedEmail.text || '';
 		const htmlBody = parsedEmail.html || '';
 
-		// Check for link in text body
-		let caseIdMatch = textBody.match(/https:\/\/app\.wirespeed\.co\/cases\/([a-f0-9-]{36})/);
+		const caseId = extractCaseId(textBody, htmlBody);
 
-		// If not found in text, check in HTML
-		if (!caseIdMatch) {
-			caseIdMatch = htmlBody.match(/https:\/\/app\.wirespeed\.co\/cases\/([a-f0-9-]{36})/);
-		}
-
-		if (!caseIdMatch) {
+		if (!caseId) {
 			console.error('Could not find Wirespeed case ID in email body');
 			return;
 		}
 
-		const caseId = caseIdMatch[1];
 		console.log(`Extracted Case ID: ${caseId}`);
 
-		// Fetch Case details from Wirespeed
-		const wirespeedResponse = await fetch(`https://api.wirespeed.co/cases/${caseId}`, {
-			method: 'GET',
-			headers: {
-				Authorization: `Bearer ${env.WIRESPEED_API_TOKEN}`,
-			},
-		});
+		let caseData: WirespeedCase | null = null;
+		let activeToken = env.WIRESPEED_API_TOKEN;
+		let apiError: string | undefined;
 
-		if (!wirespeedResponse.ok) {
-			console.error(`Failed to fetch case from Wirespeed: ${wirespeedResponse.statusText}`);
-			return;
+		try {
+			// 1. Get current team information
+			const currentTeam = await fetchCurrentTeam(activeToken);
+			console.log(`Current team: ${currentTeam.name} (${currentTeam.id})`);
+
+			// 2. Search for the case in recent cases
+			const searchData = await searchCases(activeToken);
+			const foundCase = searchData.data.find((c: WirespeedCase) => c.id === caseId);
+
+			// 3. Check if the found case is in the same team
+			if (foundCase && foundCase.teamId !== currentTeam.id) {
+				console.log(`Case belongs to a different team: ${foundCase.teamId}. Switching teams...`);
+				// 4. Switch teams
+				activeToken = await switchTeam(activeToken, foundCase.teamId);
+				console.log('Successfully switched team context.');
+			}
+
+			// Fetch Case details from Wirespeed
+			caseData = await fetchCaseDetails(activeToken, caseId);
+		} catch (error) {
+			apiError = error instanceof Error ? error.message : String(error);
+			console.error(`Error during Wirespeed API calls: ${apiError}`);
 		}
 
-		const caseData = (await wirespeedResponse.json()) as WirespeedCase;
-		const sanitizerConfig = {
-			allowedTags: [],
-			allowedAttributes: {},
-		}
-		const sanitizedSummary = sanitizeHtml(caseData.summary || '', sanitizerConfig);
-		const sanitizedNotes = sanitizeHtml(caseData.notes || 'None', sanitizerConfig);
+		const pdAlert = createPagerDutyAlert(
+			env,
+			caseId,
+			caseData,
+			parsedEmail.subject,
+			sanitize(textBody || htmlBody || 'No content found'),
+			apiError
+		);
 
-		const pdAlert = {
-			payload: {
-				summary: `Wirespeed Case: ${caseData.name || caseData.title} (${caseData.sid})`,
-				timestamp: caseData.createdAt,
-				source: 'Wirespeed',
-				severity: 'critical',
-				component: 'Security Operations',
-				group: 'Wirespeed Alerts',
-				class: 'Security Case',
-				// PagerDuty lists custom details alphabetically so order here doesn't matter'
-				custom_details: {
-					priority: caseData.severity,
-					caseID: caseData.id,
-					caseSID: caseData.sid,
-					containsVIP: caseData.containsVIP,
-					containsHVA: caseData.containsHVA,
-					containsMobile: caseData.containsMobile,
-					status: caseData.status,
-					summary: sanitizedSummary,
-					verdict: caseData.verdict,
-					notes: sanitizedNotes,
-					teamID: caseData.teamId,
-					contained: caseData.contained,
-					test_mode: caseData.testMode,
-				},
-			},
-			routing_key: env.PAGERDUTY_ROUTING_KEY,
-			event_action: 'trigger',
-			dedup_key: caseData.id,
-			links: [
-				{
-					href: `https://app.wirespeed.co/cases/${caseData.id}`,
-					text: 'View Case in Wirespeed',
-				},
-			],
-		};
-
-		const pdResponse = await fetch('https://events.pagerduty.com/v2/enqueue', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify(pdAlert),
-		});
-
-		if (!pdResponse.ok) {
-			console.error(`Failed to send alert to PagerDuty: ${pdResponse.statusText}`);
-			const errBody = await pdResponse.text();
-			console.error(`PagerDuty error body: ${errBody}`);
-		} else {
+		try {
+			await sendToPagerDuty(pdAlert);
 			console.log('Successfully sent alert to PagerDuty');
+		} catch (error) {
+			console.error(error instanceof Error ? error.message : String(error));
 		}
 	},
 };
