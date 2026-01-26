@@ -23,7 +23,7 @@ export function createPagerDutyAlert(
 				group: 'Wirespeed Alerts',
 				class: 'Security Case',
 				custom_details: {
-					priority: caseData.severity,
+					priority: caseData.severity.toLowerCase(),
 					caseID: caseData.id,
 					caseSID: caseData.sid,
 					containsVIP: caseData.containsVIP,
