@@ -1,4 +1,4 @@
-import type { WirespeedCase, PagerDutyAlert, Env } from './types.js';
+import type { WirespeedCase, PagerDutyAlert, Env, PagerDutyResolve } from './types.js';
 import { sanitize } from './utils.js';
 
 export function createPagerDutyAlert(
@@ -78,5 +78,35 @@ export function createPagerDutyAlert(
 				},
 			],
 		};
+	}
+}
+
+export async function sendToPagerDuty(alert: PagerDutyAlert): Promise<void> {
+	const response = await fetch('https://events.pagerduty.com/v2/enqueue', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify(alert),
+	});
+
+	if (!response.ok) {
+		const errBody = await response.text();
+		throw new Error(`Failed to send alert to PagerDuty: ${response.statusText}. Body: ${errBody}`);
+	}
+}
+
+export async function sendResolutionToPagerDuty(resolveEvent: PagerDutyResolve): Promise<void> {
+	const response = await fetch('https://events.pagerduty.com/v2/enqueue', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify(resolveEvent),
+	});
+
+	if (!response.ok) {
+		const errBody = await response.text();
+		throw new Error(`Failed to send resolution to PagerDuty: ${response.statusText}. Body: ${errBody}`);
 	}
 }

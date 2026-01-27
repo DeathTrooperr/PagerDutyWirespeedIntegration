@@ -3,15 +3,16 @@
 This is a Cloudflare Email Worker-based integration that connects Wirespeed security alerts to PagerDuty. It allows security teams to be quickly alerted to security escalations within the platform. The integration receives email notifications from Wirespeed via Cloudflare Email Routing, extracts the case ID, fetches case details from the Wirespeed API, and triggers a critical alert in PagerDuty. Advanced users can also configure PagerDuty to match the alert severity with the Wirespeed case severity.
 
 ## Key Features
-
+- **Standalone & Service Provider Support**: The integration is designed to work in both single-team and multi-tenant (MSP) environments.
+- **Automatic Case Resolution**: Using Cloudflare Durable Objects, the integration monitors the status of triggered Wirespeed cases. When a case is closed in Wirespeed, the corresponding PagerDuty alert is automatically resolved, keeping your incident queue clean.
 - **Failsafe System**: In the event that the Wirespeed API is unavailable or the case details cannot be fetched, the integration will trigger a "Failsafe" alert in PagerDuty using the information extracted directly from the notification email. This ensures you never miss a critical escalation.
-- **Standalone & Service Provider Support**: The integration is designed to work in both single-team and multi-tenant (MSP) environments. It automatically detects if a case belongs to a different sub-team and adjusts its API scope dynamically to fetch the correct details.
 - **Simple Deployment**: Built on Cloudflare Workers, the integration can be deployed in minutes. With minimal configuration and no complex infrastructure to manage, you can have your security alerts flowing from Wirespeed to PagerDuty almost instantly.
 - **Versatility**: Whether you're using basic PagerDuty services or advanced Event Orchestrations, this integration provides the rich metadata needed to drive intelligent routing and severity mapping. It adapts to your existing workflow, not the other way around.
 
 ## Prerequisites
 Before you begin, you will need:
 - A **Cloudflare-hosted** domain with **Email Routing** enabled.
+- A **Cloudflare Workers Paid plan** (required for Durable Objects).
 - A **PagerDuty Events Integration key** from either a Service or an Event Orchestration.
 - A **Wirespeed Team API key** with **read-only** permissions.
 
@@ -31,20 +32,27 @@ Before you begin, you will need:
    npx wrangler secret put PAGERDUTY_ROUTING_KEY
    ```
 
-3. **Deploy the project to Cloudflare:**
+3. **(Optional) Configure Polling Interval:**
+   By default, the integration polls for case resolution every 30 seconds. You can modify this in `wrangler.toml`:
+   ```toml
+   [vars]
+   POLLING_INTERVAL_SECONDS = 30
+   ```
+
+4. **Deploy the project to Cloudflare:**
    ```bash
    npx wrangler deploy
    ```
 
-4. **Set up Cloudflare Email Routing:**
+5. **Set up Cloudflare Email Routing:**
    Follow the [Cloudflare guide on setting up email routing](https://developers.cloudflare.com/email-routing/setup/email-routing-addresses/) if you haven't already.
 
-5. **Create a new Email Route:**
+6. **Create a new Email Route:**
    - Go to your domain's **Email Routing** settings in the Cloudflare dashboard.
    - Create a new address (e.g., `wirespeed@yourdomain.com`).
    - Set the destination to **Send to Worker** and select `wirespeed-pagerduty-integration`.
 
-6. **Configure Wirespeed Team Mailbox:**
+7. **Configure Wirespeed Team Mailbox:**
    - Launch your **Wirespeed console** and navigate to **Team Settings** (this can be done at the MSP or client tenant levels based on the API key scope).
    - Scroll down to the **Team Mailbox** section.
    - Add a new mailbox, setting the address to the one you created in Cloudflare (e.g., `wirespeed@yourdomain.com`).
@@ -72,6 +80,7 @@ For more granular control over alert severity and incident priority, you can use
    - For each rule, check the event priority:
      - **Condition:** `event.custom_details.priority` matches the Wirespeed level.
      - **Actions:** Set **Incident Priority** and **Severity** to the desired levels for your organization.
+   - For the default rule, you can set a default priority and severity if the priority does not match any of the defined levels. However, this may cause issues with automatic case resolution if you set the rule to always trigger an alert. 
 
 4. **Test the Integration:**
    - Once complete, test the routing and rules using a **ChatOps Test event** or by triggering a test case in Wirespeed.

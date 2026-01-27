@@ -1,13 +1,15 @@
 export interface Env {
 	WIRESPEED_API_TOKEN: string;
 	PAGERDUTY_ROUTING_KEY: string;
+	POLLING_INTERVAL_SECONDS: number;
+	CASE_WATCHER: DurableObjectNamespace;
 }
 
 export interface WirespeedCase {
 	id: string;
 	sid: string;
 	teamId: string;
-	lastNotifiedClientAt: any;
+	lastNotifiedClientAt: string | null;
 	status: string;
 	createdAt: string;
 	detectionSids: string[];
@@ -49,18 +51,9 @@ export interface WirespeedCase {
 	hasPassedAql: boolean;
 }
 
-export interface Team {
-	id: string;
-	name: string;
-}
-
 export interface CasesResponse {
 	data: WirespeedCase[];
 	totalCount: number;
-}
-
-export interface JWTResponse {
-	accessToken: string;
 }
 
 export interface PagerDutyPayload {
@@ -85,4 +78,18 @@ export interface PagerDutyAlert {
 	event_action: 'trigger';
 	dedup_key: string;
 	links: PagerDutyLink[];
+}
+
+export interface PagerDutyResolve {
+	routing_key: string;
+	dedup_key: string;
+	event_action: 'resolve';
+}
+
+export interface ParsedEmail {
+	subject?: string | undefined;
+	text?: string | undefined;
+	html?: string | undefined;
+	from: string;
+	to: string[];
 }

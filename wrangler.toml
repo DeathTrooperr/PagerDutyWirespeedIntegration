@@ -1,11 +1,10 @@
 name = "wirespeed-pagerduty-integration"
 main = "src/index.ts"
-compatibility_date = "2024-01-01"
+compatibility_date = "2026-01-01"
 workers_dev = false
 
 [vars]
-# PAGERDUTY_ROUTING_KEY = "your-routing-key"
-# WIRESPEED_API_TOKEN = "your-api-token"
+POLLING_INTERVAL_SECONDS = 15
 
 [observability]
 [observability.logs]
@@ -13,3 +12,11 @@ enabled = true
 head_sampling_rate = 1
 invocation_logs = true
 persist = true
+
+[[durable_objects.bindings]]
+name = "CASE_WATCHER"
+class_name = "CaseWatcher"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["CaseWatcher"]
