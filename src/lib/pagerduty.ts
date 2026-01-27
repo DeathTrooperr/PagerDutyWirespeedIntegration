@@ -110,3 +110,74 @@ export async function sendResolutionToPagerDuty(resolveEvent: PagerDutyResolve):
 		throw new Error(`Failed to send resolution to PagerDuty: ${response.statusText}. Body: ${errBody}`);
 	}
 }
+
+export async function findPagerDutyIncidentByDedupKey(apiKey: string, dedupKey: string): Promise<string | null> {
+	const params = new URLSearchParams({
+		incident_key: dedupKey,
+		limit: '1',
+	});
+
+	const response = await fetch(`https://api.pagerduty.com/incidents?${params.toString()}`, {
+		method: 'GET',
+		headers: {
+			'Accept': 'application/vnd.pagerduty+json;version=2',
+			'Authorization': `Token token=${apiKey}`,
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		const errBody = await response.text();
+		throw new Error(`Failed to search PagerDuty incidents: ${response.statusText}. Body: ${errBody}`);
+	}
+
+	const data = (await response.json()) as { incidents: { id: string }[] };
+	return data.incidents[0]?.id || null;
+}
+
+export async function createPagerDutyNote(apiKey: string, incidentId: string, content: string, fromEmail: string): Promise<string> {
+	const response = await fetch(`https://api.pagerduty.com/incidents/${incidentId}/notes`, {
+		method: 'POST',
+		headers: {
+			'Accept': 'application/vnd.pagerduty+json;version=2',
+			'Authorization': `Token token=${apiKey}`,
+			'Content-Type': 'application/json',
+			'From': fromEmail,
+		},
+		body: JSON.stringify({
+			note: {
+				content: content,
+			},
+		}),
+	});
+
+	if (!response.ok) {
+		const errBody = await response.text();
+		throw new Error(`Failed to create PagerDuty note: ${response.statusText}. Body: ${errBody}`);
+	}
+
+	const data = (await response.json()) as { note: { id: string } };
+	return data.note.id;
+}
+
+export async function updatePagerDutyNote(apiKey: string, incidentId: string, noteId: string, content: string, fromEmail: string): Promise<void> {
+	const response = await fetch(`https://api.pagerduty.com/incidents/${incidentId}/notes/${noteId}`, {
+		method: 'PUT',
+		headers: {
+			'Accept': 'application/vnd.pagerduty+json;version=2',
+			'Authorization': `Token token=${apiKey}`,
+			'Content-Type': 'application/json',
+			'From': fromEmail,
+		},
+		body: JSON.stringify({
+			note: {
+				content: content,
+			},
+		}),
+	});
+
+	if (!response.ok) {
+		const errBody = await response.text();
+		throw new Error(`Failed to update PagerDuty note: ${response.statusText}. Body: ${errBody}`);
+	}
+}

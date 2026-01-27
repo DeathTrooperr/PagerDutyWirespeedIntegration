@@ -1,6 +1,7 @@
 export interface Env {
 	WIRESPEED_API_TOKEN: string;
 	PAGERDUTY_ROUTING_KEY: string;
+	PAGERDUTY_API_KEY?: string;
 	POLLING_INTERVAL_SECONDS: number;
 	CASE_WATCHER: DurableObjectNamespace;
 }

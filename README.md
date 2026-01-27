@@ -4,7 +4,7 @@ This is a Cloudflare Email Worker-based integration that connects Wirespeed secu
 
 ## Key Features
 - **Standalone & Service Provider Support**: The integration is designed to work in both single-team and multi-tenant (MSP) environments.
-- **Automatic Case Resolution**: Using Cloudflare Durable Objects, the integration monitors the status of triggered Wirespeed cases. When a case is closed in Wirespeed, the corresponding PagerDuty alert is automatically resolved, keeping your incident queue clean.
+- **Automatic Case Resolution & Rich Summaries**: Using Cloudflare Durable Objects, the integration monitors the status of triggered Wirespeed cases. When a case is closed in Wirespeed, the corresponding PagerDuty alert is automatically resolved. If configured with a PagerDuty API key, the integration will also post the Wirespeed resolution verdict and a sanitized summary directly to the PagerDuty incident as a note, providing immediate context for the closed incident.
 - **Failsafe System**: In the event that the Wirespeed API is unavailable or the case details cannot be fetched, the integration will trigger a "Failsafe" alert in PagerDuty using the information extracted directly from the notification email. This ensures you never miss a critical escalation.
 - **Simple Deployment**: Built on Cloudflare Workers, the integration can be deployed in minutes. With minimal configuration and no complex infrastructure to manage, you can have your security alerts flowing from Wirespeed to PagerDuty almost instantly.
 - **Versatility**: Whether you're using basic PagerDuty services or advanced Event Orchestrations, this integration provides the rich metadata needed to drive intelligent routing and severity mapping. It adapts to your existing workflow, not the other way around.
@@ -15,6 +15,7 @@ Before you begin, you will need:
 - A **Cloudflare Workers Paid plan** (required for Durable Objects).
 - A **PagerDuty Events Integration key** from either a Service or an Event Orchestration.
 - A **Wirespeed Team API key** with **read-only** permissions.
+- A **PagerDuty REST API Key** (optional). This is required if you want the integration to add Wirespeed resolution summaries as notes to PagerDuty incidents when they are closed.
 
 ## Deployment Steps
 
@@ -30,6 +31,7 @@ Before you begin, you will need:
    ```bash
    npx wrangler secret put WIRESPEED_API_TOKEN
    npx wrangler secret put PAGERDUTY_ROUTING_KEY
+   npx wrangler secret put PAGERDUTY_API_KEY
    ```
 
 3. **(Optional) Configure Polling Interval:**
