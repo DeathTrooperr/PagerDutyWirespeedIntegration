@@ -65,7 +65,7 @@ export class CaseWatcher extends DurableObject<Env> {
 									await this.ctx.storage.put("fromEmail", fromEmail);
 									const verdict = caseData?.verdict || "Unknown";
 									const estTimestamp = new Date().toLocaleString("en-US", { timeZone: "America/New_York" }) + " EST";
-									const analystNotes = `\n${caseData?.notes}` || "None";
+									const analystNotes =  !caseData?.notes.includes("null") ? `\n${caseData?.notes}` : "None";
 									const placeholderContent = `Resolved by ${fromEmail} as ${verdict} at ${estTimestamp}.\n\nAnalyst Notes: ${analystNotes}\n\nWirespeed Summary: Awaiting Summary`;
 									
 									const noteId = await createPagerDutyNote(this.env.PAGERDUTY_API_KEY, pdIncidentId, placeholderContent, fromEmail);
@@ -110,7 +110,7 @@ export class CaseWatcher extends DurableObject<Env> {
 						const verdict = caseData?.verdict || "Unknown";
 						// Use same format as placeholder but with summary
 						const estTimestamp = new Date().toLocaleString("en-US", { timeZone: "America/New_York" }) + " EST";
-						const analystNotes = `\n${caseData?.notes}` || "None";
+						const analystNotes =  !caseData?.notes.includes("null") ? `\n${caseData?.notes}` : "None";
 						const finalContent = `Resolved by ${fromEmail} as ${verdict} at ${estTimestamp}.\n\nAnalyst Notes: ${analystNotes}\n\nWirespeed Summary:\n${sanitizedSummary}`;
 						
 						await updatePagerDutyNote(this.env.PAGERDUTY_API_KEY, pdIncidentId, noteId, finalContent, fromEmail);
