@@ -1,8 +1,17 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./types.js";
-import { getCaseFromRecent } from "./wirespeed.js";
+import { getCaseFromRecent, getCaseComments } from "./wirespeed.js";
+import type { CaseComment } from "./types.js";
 import { sendResolutionToPagerDuty, findPagerDutyIncidentByDedupKey, createPagerDutyNote, updatePagerDutyNote } from "./pagerduty.js";
 import { sanitize } from "./utils.js";
+
+function formatAnalystNotes(comments: CaseComment[] | null | undefined): string {
+	const visible = (comments || []).filter(c => !c.deleted && c.content?.trim());
+	if (visible.length === 0) return "None";
+	return "\n" + visible
+		.map(c => `- ${c.authorName}: ${c.content.trim()}`)
+		.join("\n");
+}
 
 export class CaseWatcher extends DurableObject<Env> {
 	constructor(ctx: DurableObjectState, env: Env) {
@@ -52,7 +61,7 @@ export class CaseWatcher extends DurableObject<Env> {
 								// Find the email of the person who closed the case from the logs
 								let fromEmail: string | undefined;
 								if (caseData?.logs) {
-									const closingLog = [...caseData.logs].reverse().find(l => l.log.includes("closed case"));
+									const closingLog = [...caseData.logs].reverse().find(l => l.log.includes("resolved case"));
 									if (closingLog) {
 										const emailMatch = closingLog.log.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
 										if (emailMatch) {
@@ -65,7 +74,13 @@ export class CaseWatcher extends DurableObject<Env> {
 									await this.ctx.storage.put("fromEmail", fromEmail);
 									const verdict = caseData?.verdict || "Unknown";
 									const estTimestamp = new Date().toLocaleString("en-US", { timeZone: "America/New_York" }) + " EST";
-									const analystNotes =  !caseData?.notes.includes("null") ? `\n${caseData?.notes}` : "None";
+									let comments: CaseComment[] = [];
+									try {
+										comments = await getCaseComments(this.env.WIRESPEED_API_TOKEN, caseId);
+									} catch (commentsError) {
+										console.error(`Error fetching comments for case ${caseId}:`, commentsError);
+									}
+									const analystNotes = formatAnalystNotes(comments);
 									const placeholderContent = `Resolved by ${fromEmail} as ${verdict} at ${estTimestamp}.\n\nAnalyst Notes: ${analystNotes}\n\nWirespeed Summary: Awaiting Summary`;
 									
 									const noteId = await createPagerDutyNote(this.env.PAGERDUTY_API_KEY, pdIncidentId, placeholderContent, fromEmail);
@@ -108,9 +123,14 @@ export class CaseWatcher extends DurableObject<Env> {
 					try {
 						const sanitizedSummary = sanitize(caseData?.summary || "No summary provided.");
 						const verdict = caseData?.verdict || "Unknown";
-						// Use same format as placeholder but with summary
 						const estTimestamp = new Date().toLocaleString("en-US", { timeZone: "America/New_York" }) + " EST";
-						const analystNotes =  !caseData?.notes.includes("null") ? `\n${caseData?.notes}` : "None";
+						let comments: CaseComment[] = [];
+						try {
+							comments = await getCaseComments(this.env.WIRESPEED_API_TOKEN, caseId);
+						} catch (commentsError) {
+							console.error(`Error fetching comments for case ${caseId}:`, commentsError);
+						}
+						const analystNotes = formatAnalystNotes(comments);
 						const finalContent = `Resolved by ${fromEmail} as ${verdict} at ${estTimestamp}.\n\nAnalyst Notes: ${analystNotes}\n\nWirespeed Summary:\n${sanitizedSummary}`;
 						
 						await updatePagerDutyNote(this.env.PAGERDUTY_API_KEY, pdIncidentId, noteId, finalContent, fromEmail);

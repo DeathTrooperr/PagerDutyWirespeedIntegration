@@ -57,6 +57,17 @@ export interface CasesResponse {
 	totalCount: number;
 }
 
+export interface CaseComment {
+	id: string;
+	authorName: string;
+	authorId: string;
+	content: string;
+	createdAt: string;
+	updatedAt: string;
+	deleted: boolean;
+	attachments: unknown[];
+}
+
 export interface PagerDutyPayload {
 	summary: string;
 	timestamp: string;
